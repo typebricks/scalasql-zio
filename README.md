@@ -107,22 +107,29 @@ For example, log a transfer attempt that survives even when the transfer itself 
 transaction:
   for
     // Log attempt (outside savepoint — persists regardless)
-    _ <- DbOp.run(TransferAudit.insert.columns(
-      _.fromUserId := fromId, _.toUserId := toId, _.amount := amount, _.event := "attempt"
-    ))
+    _ <- DbOp.run:
+        TransferAudit.insert.columns(
+            _.fromUserId := fromId,
+            _.toUserId := toId,
+            _.amount := amount,
+            _.event := "attempt"
+        )
     // Transfer — inside savepoint, rolled back on failure
     result <- DbZIO: txn =>
-      txn.savepoint: _ =>
+      txn.savepoint: sp =>
         for
           _ <- DbOp.run(Account.update(_.userId `=` fromId).set(_.balance := from.balance - amount))
+          _ <- ZIO.logDebug("explicit `sp.rollback` available as a ZIO here")
           _ <- DbOp.run(Account.update(_.userId `=` toId).set(_.balance := to.balance + amount))
+          _ <- ZIO.logDebug("When failure is within .savepoint, it's rolled back automatically")
         yield ()
     .either
     // Log outcome
-    _ <- DbOp.run(TransferAudit.insert.columns(
-      _.fromUserId := fromId, _.toUserId := toId, _.amount := amount,
-      _.event := (if result.isRight then "success" else "failure")
-    ))
+    _ <- DbOp.run:
+        TransferAudit.insert.columns(
+          _.fromUserId := fromId, _.toUserId := toId, _.amount := amount,
+          _.event := (if result.isRight then "success" else "failure")
+        )
   yield ()
 ```
 
