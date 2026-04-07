@@ -1,4 +1,5 @@
-package typebricks.scalasql.dbzio.tests
+package typebricks.scalasql
+package dbzio.tests
 
 import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.any.Pure
@@ -26,30 +27,33 @@ object UserName extends RefinedType[String, Pure]:
 type UserName = UserName.T
 
 case class User[+F[_]](
-    id: F[Long],
+    id: F[User.Id],
     email: F[Email],
     name: F[UserName]
 )
 
-object User extends QTable[User]
+object User extends QTable[User]:
+  type Id = PrimaryKey[User, Long]
 
 case class Account[+F[_]](
-    id: F[Long],
-    userId: F[Long],
+    id: F[Account.Id],
+    userId: F[User.Id],
     balance: F[BigDecimal]
 )
 
-object Account extends QTable[Account]
+object Account extends QTable[Account]:
+  type Id = PrimaryKey[Account, Long]
 
 case class TransferAudit[+F[_]](
-    id: F[Long],
-    fromUserId: F[Long],
-    toUserId: F[Long],
+    id: F[TransferAudit.Id],
+    fromUserId: F[User.Id],
+    toUserId: F[User.Id],
     amount: F[BigDecimal],
     event: F[String]
 )
 
-object TransferAudit extends QTable[TransferAudit]
+object TransferAudit extends QTable[TransferAudit]:
+  type Id = PrimaryKey[TransferAudit, Long]
 
 object TestDb:
   private val freshDataSource: Task[DataSource] = ZIO.attemptBlocking:

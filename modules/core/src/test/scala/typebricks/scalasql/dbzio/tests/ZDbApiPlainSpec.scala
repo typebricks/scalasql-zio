@@ -18,7 +18,7 @@ object ZDbApiPlainSpec extends ZIOSpec[ZDbClient]:
   private def insertUser(email: Email, name: UserName) = DbOp.run:
     User.insert.columns(_.email := email, _.name := name)
 
-  private def insertAccount(userId: Long, balance: BigDecimal) = DbOp.run:
+  private def insertAccount(userId: User.Id, balance: BigDecimal) = DbOp.run:
     Account.insert.columns(_.userId := userId, _.balance := balance)
 
   private def getAccount(userId: Long) =
@@ -28,7 +28,7 @@ object ZDbApiPlainSpec extends ZIOSpec[ZDbClient]:
       .map(_.headOption)
       .orNotFound
 
-  private def updateAccountBalance(userId: Long, balance: BigDecimal) = DbOp.run:
+  private def updateAccountBalance(userId: User.Id, balance: BigDecimal) = DbOp.run:
     Account.update(_.userId `=` userId).set(_.balance := balance)
 
   private def insertAndGetUser(email: Email, name: UserName) =
@@ -39,7 +39,7 @@ object ZDbApiPlainSpec extends ZIOSpec[ZDbClient]:
       .orNotFound
 
   /** Lock two accounts in a single query, returning (first, second) in argument order. */
-  private def lockAccountPair(userId1: Long, userId2: Long) =
+  private def lockAccountPair(userId1: User.Id, userId2: User.Id) =
     for
       accounts <- DbOp.run:
         Account.select
